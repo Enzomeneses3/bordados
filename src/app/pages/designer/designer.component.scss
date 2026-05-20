@@ -1,6 +1,7 @@
 :host {
   display: block;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -245,6 +246,10 @@
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
+}
+
+.btn-import-short {
+  display: none;
 }
 
 .advanced-panel {
@@ -886,24 +891,52 @@ input[type='range'] {
   }
 }
 
-/* ── Pantallas chicas ── */
+/* ── Tablet y móvil ── */
 @media (max-width: 860px) {
+  .designer {
+    height: 100dvh;
+  }
+
   .app-header {
-    flex-wrap: wrap;
-    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'brand actions'
+      'tabs tabs';
+    gap: 8px 10px;
+    padding: 10px 12px;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+
+  .header-left {
+    grid-area: brand;
+    min-width: 0;
   }
 
   .main-tabs {
-    order: 3;
+    grid-area: tabs;
+    order: unset;
     width: 100%;
-    justify-content: flex-start;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-color);
-    margin-top: 8px;
+    justify-content: stretch;
+    padding-top: 0;
+    border-top: none;
+    margin-top: 0;
+    gap: 6px;
+  }
+
+  .main-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 12px;
   }
 
   .header-actions {
-    margin-left: auto;
+    grid-area: actions;
+    margin-left: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
   }
 
   .app-body {
@@ -912,21 +945,37 @@ input[type='range'] {
 
   .tools-panel {
     width: 100%;
-    max-height: 45vh;
+    max-height: 38vh;
     border-right: 0;
     border-top: 1px solid var(--border-color);
     order: 2;
+    flex-shrink: 0;
   }
 
   .canvas-area {
     order: 1;
-    flex: 1;
-    min-height: 0;
-    padding: 12px;
+    flex: 1 1 auto;
+    min-height: 52vh;
+    padding: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
-  
+
   .workspace-toggle {
-    top: 24px;
+    top: 12px;
+    transform: translateX(-50%) scale(0.92);
+  }
+
+  .mockup-toolbar {
+    top: 12px;
+    right: 8px;
+    left: 8px;
+    flex-wrap: wrap;
+  }
+
+  .canvas-toolbar {
+    bottom: 10px;
+    right: 8px;
+    left: 8px;
   }
 }
 
@@ -1424,38 +1473,54 @@ input[type='range'] {
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-/* ── Multi-device responsive styling for toolbar ── */
+/* ── Barra contextual en móvil: una fila desplazable ── */
 @media (max-width: 860px) {
   .context-toolbar {
-    position: fixed;
+    position: absolute;
     top: auto;
-    bottom: calc(45vh + 12px);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 94%;
-    max-width: 480px;
-    border-radius: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 10px;
-    gap: 8px;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    border-radius: var(--radius-md);
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding: 6px 10px;
+    gap: 10px;
     box-shadow: var(--shadow-xl), 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    -webkit-overflow-scrolling: touch;
 
     .divider {
-      display: none;
+      display: block;
+      flex-shrink: 0;
     }
 
     .toolbar-group {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 4px 8px;
-      border-radius: var(--radius-sm);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      flex-shrink: 0;
+      background: transparent;
+      padding: 0;
+      border: none;
+    }
+
+    .group-label {
+      display: none;
     }
   }
 
   @keyframes fadeInToolbar {
-    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .context-toolbar.animate-fade-in {
+    animation: fadeInToolbarMobile 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fadeInToolbarMobile {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
@@ -1776,18 +1841,237 @@ input[type='range'] {
   }
 }
 
-/* Responsive adjustment */
+/* Responsive adjustment — pantalla de bienvenida */
 @media (max-width: 680px) {
+  .welcome-screen {
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
   .welcome-card {
-    padding: 24px;
+    width: 100%;
+    max-width: none;
+    padding: 20px 16px;
+    gap: 18px;
+    margin: auto 0;
   }
 
   .welcome-title {
     font-size: 24px;
   }
 
+  .welcome-hero-text,
+  .welcome-clarity {
+    max-width: none;
+  }
+
   .quick-guide-grid {
     grid-template-columns: 1fr;
     gap: 12px;
+    padding: 14px 0;
+  }
+
+  .stitch-animation-container {
+    width: 200px;
+    height: 200px;
+    top: 8%;
+    right: -40px;
+    opacity: 0.08;
+  }
+
+  .welcome-dropzone {
+    padding: 24px 16px;
+  }
+}
+
+/* ── Teléfonos (iPhone, Android estrecho) ── */
+@media (max-width: 480px) {
+  :host:has(.welcome-screen) {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .designer:has(.welcome-screen) {
+    min-height: 100dvh;
+    height: auto;
+  }
+
+  .brand-text span {
+    display: none;
+  }
+
+  .brand-badge {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+  }
+
+  .brand-text strong {
+    font-size: 13px;
+  }
+
+  .header-stats {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .stat-badge {
+    padding: 3px 8px;
+    font-size: 11px;
+
+    .stat-unit {
+      font-size: 10px;
+    }
+  }
+
+  .stat-badge-size {
+    display: none;
+  }
+
+  .header-divider {
+    display: none;
+  }
+
+  .switch-expert .label-text {
+    display: none;
+  }
+
+  .btn-import-label {
+    display: none;
+  }
+
+  .btn-import-short {
+    display: inline;
+  }
+
+  .btn-import {
+    padding: 8px 12px;
+  }
+
+  .undo-redo-group {
+    order: -1;
+  }
+
+  .panel-content {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .card h2 {
+    font-size: 14px;
+  }
+
+  .tools-panel {
+    max-height: 36vh;
+  }
+
+  .canvas-area {
+    min-height: 54vh;
+  }
+
+  .workspace-toggle button {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  .context-toolbar {
+    bottom: 6px;
+    left: 6px;
+    right: 6px;
+    padding: 6px 8px;
+    gap: 8px;
+
+    .color-dot {
+      width: 20px;
+      height: 20px;
+    }
+
+    .minimal-input.size-input {
+      width: 40px;
+    }
+
+    .text-opt-btn {
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .toast {
+    left: 12px;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    text-align: center;
+  }
+
+  .welcome-screen {
+    padding: 12px;
+  }
+
+  .welcome-card {
+    padding: 16px 14px;
+    gap: 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .welcome-badge {
+    font-size: 10px;
+    padding: 5px 10px;
+  }
+
+  .welcome-title {
+    font-size: 21px;
+    line-height: 1.2;
+  }
+
+  .welcome-hero-text {
+    font-size: 14px;
+  }
+
+  .welcome-clarity {
+    font-size: 12px;
+    padding: 8px 10px;
+    margin: 0;
+  }
+
+  .welcome-dropzone {
+    padding: 20px 12px;
+
+    h3 {
+      font-size: 14px;
+    }
+
+    .pulse-ring {
+      width: 48px;
+      height: 48px;
+    }
+
+    .upload-icon {
+      font-size: 22px;
+    }
+  }
+
+  .stitch-animation-container {
+    display: none;
+  }
+
+  .guide-desc strong {
+    font-size: 12px;
+  }
+
+  .guide-desc span {
+    font-size: 10px;
   }
 }

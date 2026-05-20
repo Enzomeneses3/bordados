@@ -35,13 +35,13 @@
 
         <!-- Design Stats -->
         <div class="header-stats">
-          <div class="stat-badge" title="Cantidad de puntadas totales">
+          <div class="stat-badge stat-badge-stitches" title="Cantidad de puntadas totales">
             <span class="stat-icon">🧵</span>
-            <strong>{{ stats().stitches | number }}</strong> pts
+            <strong>{{ stats().stitches | number }}</strong><span class="stat-unit"> pts</span>
           </div>
-          <div class="stat-badge" title="Tamaño total del diseño">
+          <div class="stat-badge stat-badge-size" title="Tamaño total del diseño">
             <span class="stat-icon">📏</span>
-            <strong>{{ totalDesignSize().width / 10 | number:'1.0-1' }} × {{ totalDesignSize().height / 10 | number:'1.0-1' }}</strong> cm
+            <strong>{{ totalDesignSize().width / 10 | number:'1.0-1' }}×{{ totalDesignSize().height / 10 | number:'1.0-1' }}</strong><span class="stat-unit"> cm</span>
           </div>
         </div>
 
@@ -58,7 +58,8 @@
 
         <!-- Main CTA -->
         <label class="btn btn-primary btn-import">
-          Abrir archivo
+          <span class="btn-import-label">Abrir archivo</span>
+          <span class="btn-import-short" aria-hidden="true">Abrir</span>
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,.dst,.pes,.pec,.emb,.art"
