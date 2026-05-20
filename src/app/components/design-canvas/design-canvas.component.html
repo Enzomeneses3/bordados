@@ -1,0 +1,25 @@
+<div class="canvas-shell">
+  <div class="canvas-toolbar">
+    <button type="button" title="Alejar" (click)="zoomOut()"><i class="ph ph-minus"></i></button>
+    <button type="button" title="Restablecer zoom" (click)="resetZoom()">100%</button>
+    <button type="button" title="Acercar" (click)="zoomIn()"><i class="ph ph-plus"></i></button>
+  </div>
+
+  @if (design().shapes.length === 0 && !design().backgroundImage) {
+    <div class="empty-state">
+      <i class="empty-icon ph ph-needle"></i>
+      <h3>Empieza tu diseño</h3>
+      <p>Carga una imagen PNG o agrega formas desde el panel izquierdo.</p>
+    </div>
+  }
+
+  <canvas
+    #canvas
+    (mousedown)="onPointerDown($event)"
+    (mousemove)="onPointerMove($event)"
+    (mouseup)="onPointerUp()"
+    (mouseleave)="onPointerUp()"
+  ></canvas>
+
+  <div class="canvas-hint">Arrastra para mover · Rueda para zoom</div>
+</div>

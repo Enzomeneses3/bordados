@@ -1,0 +1,522 @@
+<div class="designer">
+  @if (hasStarted()) {
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-badge">BD</div>
+        <div class="brand-text">
+          <strong>Bordadoras Studio</strong>
+          <span>Janome · Artistic Digitizer</span>
+        </div>
+      </div>
+
+      <nav class="main-tabs" aria-label="Secciones">
+        @for (tab of tabs; track tab.id) {
+          <button type="button" class="main-tab" [class.active]="activeTab() === tab.id" (click)="setTab(tab.id)">
+            <i class="tab-icon" [class]="tab.icon"></i>
+            {{ tab.label }}
+          </button>
+        }
+      </nav>
+
+      <div class="header-actions">
+        <!-- Undo/Redo Group -->
+        <div class="undo-redo-group">
+          <button type="button" class="header-action-btn" (click)="designService.undo()" title="Deshacer (Ctrl+Z)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+          </button>
+          <button type="button" class="header-action-btn" (click)="designService.redo()" title="Rehacer (Ctrl+Y)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Design Stats -->
+        <div class="header-stats">
+          <div class="stat-badge" title="Cantidad de puntadas totales">
+            <span class="stat-icon">🧵</span>
+            <strong>{{ stats().stitches | number }}</strong> pts
+          </div>
+          <div class="stat-badge" title="Tamaño total del diseño">
+            <span class="stat-icon">📏</span>
+            <strong>{{ totalDesignSize().width / 10 | number:'1.0-1' }} × {{ totalDesignSize().height / 10 | number:'1.0-1' }}</strong> cm
+          </div>
+        </div>
+
+        <div class="header-divider"></div>
+
+        <!-- Pro Toggle -->
+        <label class="switch-expert" title="Modo Avanzado">
+          <span class="label-text">Pro</span>
+          <div class="switch-track">
+            <input type="checkbox" [ngModel]="expertMode()" (ngModelChange)="expertMode.set($event)" />
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <!-- Main CTA -->
+        <label class="btn btn-primary btn-import">
+          Abrir archivo
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,.dst,.pes,.pec,.emb,.art"
+            (change)="onImageSelected($event)"
+            hidden
+          />
+        </label>
+      </div>
+    </header>
+
+    @if (designService.statusMessage(); as message) {
+      <div class="toast">{{ message }}</div>
+    }
+
+    <div class="app-body">
+      <aside class="tools-panel">
+        <div class="panel-content">
+          @if (hasQualityControls()) {
+            <section class="card quality-card">
+              <h2>Calidad del bordado</h2>
+              <p class="hint-text quality-hint">
+                @if (canRetraceFromImage()) {
+                  Los cambios se aplican al instante sobre la imagen importada.
+                } @else {
+                  Menos detalle = menos puntadas. Ideal para archivos EMB, DST o PES.
+                }
+              </p>
+
+              @if (designService.isTracing()) {
+                <div class="quality-loading">Actualizando lienzo…</div>
+              }
+
+              <div class="slider-field">
+                <label>
+                  <span>Cantidad de hilos (colores)</span>
+                  <strong>{{ traceOptions.maxColors }}</strong>
+                </label>
+                <input
+                  type="range"
+                  min="2"
+                  max="15"
+                  [(ngModel)]="traceOptions.maxColors"
+                  (input)="onQualityChange()"
+                />
+              </div>
+
+              <div class="slider-field">
+                <label>
+                  <span>Detalle de puntadas</span>
+                  <strong>{{ traceOptions.detail }}/10</strong>
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  [(ngModel)]="traceOptions.detail"
+                  (input)="onQualityChange()"
+                />
+                <div class="range-labels">
+                  <span>Menos puntadas</span>
+                  <span>Más detalle</span>
+                </div>
+              </div>
+
+              <div class="quality-live-stats">
+                <span>{{ stats().stitches | number }} puntadas</span>
+                <span>{{ stats().colorBlocks }} colores</span>
+                <span>{{ design().shapes.length }} regiones</span>
+              </div>
+
+              @if (canRetraceFromImage()) {
+                <label>
+                  Tipo de puntada
+                  <select
+                    [ngModel]="traceOptions.stitchType"
+                    (ngModelChange)="traceOptions.stitchType = $event; onQualityChange()"
+                  >
+                    @for (stitch of stitchTypes; track stitch.value) {
+                      <option [ngValue]="stitch.value">{{ stitch.label }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="checkbox-row">
+                  <input
+                    type="checkbox"
+                    [ngModel]="traceOptions.keepBackground"
+                    (ngModelChange)="traceOptions.keepBackground = $event; onQualityChange()"
+                  />
+                  Mostrar imagen de referencia
+                </label>
+                <label class="checkbox-row">
+                  <input
+                    type="checkbox"
+                    [ngModel]="traceOptions.snapToRealThreads"
+                    (ngModelChange)="traceOptions.snapToRealThreads = $event; onQualityChange()"
+                  />
+                  Coincidir hilos reales (Janome)
+                </label>
+
+                <div class="quality-actions">
+                  <button type="button" class="btn btn-soft full" (click)="designService.toggleBackgroundVisibility()">
+                    {{ design().backgroundImage?.visible ? 'Ocultar referencia' : 'Mostrar referencia' }}
+                  </button>
+                  <button type="button" class="btn btn-danger full" (click)="designService.removeTracedShapes(); onQualityChange()">
+                    Borrar trazado
+                  </button>
+                </div>
+              }
+            </section>
+          }
+
+          @if (workspaceView() === 'mockup') {
+            <section class="card mockup-garment-card">
+              <h2>Prenda del Simulador</h2>
+              <div class="garment-grid">
+                @for (c of garments; track c.value) {
+                  <button
+                    type="button"
+                    class="garment-btn"
+                    [class.active]="garmentType() === c.value"
+                    (click)="garmentType.set(c.value)"
+                  >
+                    {{ c.label }}
+                  </button>
+                }
+              </div>
+            </section>
+          }
+          @switch (activeTab()) {
+            @case ('create') {
+              <section class="card">
+                <h2>Ajustes del Bastidor</h2>
+                <label>
+                  Tamaño de Aro
+                  <select [ngModel]="design().hoopSize" (ngModelChange)="designService.setHoopSize($event)">
+                    @for (hoop of hoopOptions; track hoop.value) {
+                      <option [ngValue]="hoop.value">{{ hoop.label }}</option>
+                    }
+                  </select>
+                </label>
+              </section>
+
+              @if (expertMode()) {
+                <section class="card animate-fade-in">
+                  <h2>Escalar Diseño Total</h2>
+                  <label>Ancho total (mm) <input type="number" [ngModel]="totalDesignSize().width" (keyup.enter)="scaleDesignProportionally(+$any($event.target).value)" (blur)="scaleDesignProportionally(+$any($event.target).value)" /></label>
+                  <p class="hint-text">Cambia el ancho total y presiona Enter. Todo el diseño se re-escalará proporcionalmente.</p>
+                </section>
+              }
+            }
+
+            @case ('export') {
+              <section class="card">
+                <h2>Exportar</h2>
+                <label>
+                  Nombre del archivo
+                  <input
+                    type="text"
+                    [ngModel]="design().name"
+                    (ngModelChange)="designService.updateDesign({ name: $event })"
+                    placeholder="Nombre del diseño"
+                  />
+                </label>
+                @if (expertMode()) {
+                  <div class="export-summary">
+                    <span>{{ totalDesignSize().width / 10 | number:'1.0-1' }} × {{ totalDesignSize().height / 10 | number:'1.0-1' }} cm</span>
+                    <span>{{ stats().stitches }} puntadas</span>
+                    <span>{{ stats().colorBlocks }} colores</span>
+                  </div>
+                }
+                @for (format of exportFormats; track format.value) {
+                  <button type="button" class="export-card" (click)="export(format.value)">
+                    <strong>{{ format.label }}</strong>
+                    <span>{{ format.hint }}</span>
+                  </button>
+                }
+                <label class="btn btn-soft full">
+                  Abrir proyecto guardado
+                  <input type="file" accept=".json,.bord.json,application/json" (change)="onImportProject($event)" hidden />
+                </label>
+                <button type="button" class="btn btn-soft full" (click)="startNewProject()">Nuevo diseño</button>
+              </section>
+            }
+          }
+
+          <section class="card colors-palette-card animate-fade-in">
+            <h2>Hilos de Bordar</h2>
+            <div class="color-list">
+              @for (color of design().colors; track color.id) {
+                <div class="color-item">
+                  <button
+                    type="button"
+                    class="swatch"
+                    [style.background]="color.hex"
+                    [class.active]="designService.activeColorId() === color.id"
+                    (click)="designService.activeColorId.set(color.id)"
+                    title="Seleccionar para dibujar"
+                  ></button>
+                  <input type="text" [ngModel]="color.name" (ngModelChange)="designService.updateColor(color.id, { name: $event })" />
+                  <input type="color" [ngModel]="color.hex" (ngModelChange)="designService.updateColor(color.id, { hex: $event })" />
+                </div>
+              }
+            </div>
+            
+            <div class="add-color-row">
+              <input type="color" [(ngModel)]="newColorHex" />
+              <input type="text" [(ngModel)]="newColorName" placeholder="Nuevo hilo..." />
+              <button type="button" class="btn btn-soft btn-sm" (click)="addColor()">+ Hilo</button>
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <main class="canvas-area">
+        <div class="workspace-toggle">
+          <button type="button" [class.active]="workspaceView() === 'editor'" (click)="setWorkspace('editor')">
+            Editor
+          </button>
+          <button type="button" [class.active]="workspaceView() === 'mockup'" (click)="setWorkspace('mockup')">
+            Simulador 3D
+          </button>
+        </div>
+
+        @if (workspaceView() === 'editor') {
+          <div class="canvas-toolbar">
+            <label>
+              Vista
+              <select [ngModel]="designService.canvasViewMode()" (ngModelChange)="designService.canvasViewMode.set($event)">
+                @for (mode of viewModes; track mode.value) {
+                  <option [ngValue]="mode.value">{{ mode.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <app-design-canvas
+            [design]="design()"
+            [selectedShapeId]="designService.selectedShapeId()"
+            [viewMode]="designService.canvasViewMode()"
+          />
+        } @else {
+          <div class="mockup-toolbar">
+            <label class="scale-field">
+              Tamaño
+              <input type="range" min="0.5" max="1.5" step="0.05" [ngModel]="mockupScale()" (ngModelChange)="mockupScale.set(+$event)" />
+            </label>
+          </div>
+          <app-garment-mockup
+            [design]="design()"
+            [garmentType]="garmentType()"
+            [designScale]="mockupScale()"
+          />
+        }
+
+        <!-- Canva-style Floating Contextual Toolbar -->
+        @if (designService.selectedShapeId(); as shapeId) {
+          @if (selectedShape(); as shape) {
+            <div class="context-toolbar animate-fade-in">
+              <!-- Quick Color Palette -->
+              <div class="toolbar-group colors-group">
+                <span class="group-label">Color</span>
+                <div class="quick-colors">
+                  @for (color of design().colors; track color.id) {
+                    <button
+                      type="button"
+                      class="color-dot"
+                      [style.background-color]="color.hex"
+                      [class.active]="shape.colorId === color.id"
+                      (click)="updateSelectedShape({ colorId: color.id })"
+                      [title]="color.name"
+                    ></button>
+                  }
+                  <!-- Dropdown fallback for custom select -->
+                  <div class="color-picker-wrapper">
+                    <select [ngModel]="shape.colorId" (ngModelChange)="updateSelectedShape({ colorId: $event })" class="minimal-select">
+                      @for (color of design().colors; track color.id) {
+                        <option [ngValue]="color.id">{{ color.name }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Stitch Type -->
+              <div class="toolbar-group">
+                <span class="group-label">Puntada</span>
+                <select [ngModel]="shape.stitchType" (ngModelChange)="updateSelectedShape({ stitchType: $event })" class="minimal-select">
+                  @for (stitch of stitchTypes; track stitch.value) {
+                    <option [ngValue]="stitch.value">{{ stitch.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Dimensions (Width & Height) -->
+              <div class="toolbar-group dimensions-group">
+                <span class="group-label">Tamaño (px)</span>
+                <div class="num-controls">
+                  <input type="number" class="minimal-input size-input" [ngModel]="shape.width | number:'1.0-0'" (ngModelChange)="updateSelectedShape({ width: +$event })" title="Ancho" />
+                  <span class="cross">×</span>
+                  <input type="number" class="minimal-input size-input" [ngModel]="shape.height | number:'1.0-0'" (ngModelChange)="updateSelectedShape({ height: +$event })" title="Alto" />
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Rotation -->
+              <div class="toolbar-group rotation-group">
+                <span class="group-label">Giro</span>
+                <div class="num-controls">
+                  <button type="button" class="num-btn" (click)="updateSelectedShape({ rotation: (shape.rotation - 15) % 360 })" title="Girar -15°">↺</button>
+                  <input type="number" class="minimal-input rotate-input" [ngModel]="shape.rotation" (ngModelChange)="updateSelectedShape({ rotation: +$event })" />
+                  <button type="button" class="num-btn" (click)="updateSelectedShape({ rotation: (shape.rotation + 15) % 360 })" title="Girar +15°">↻</button>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Layers Order -->
+              <div class="toolbar-group layers-group">
+                <span class="group-label">Capa</span>
+                <div class="icon-actions">
+                  <button type="button" class="action-btn" (click)="moveSelectedShape('front')" title="Traer al frente">⇈</button>
+                  <button type="button" class="action-btn" (click)="moveSelectedShape('forward')" title="Subir una capa">↑</button>
+                  <button type="button" class="action-btn" (click)="moveSelectedShape('backward')" title="Bajar una capa">↓</button>
+                  <button type="button" class="action-btn" (click)="moveSelectedShape('back')" title="Enviar al fondo">⇊</button>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Text Conversion or Content editing -->
+              @if (shape.type === 'text') {
+                <div class="toolbar-group text-edit-group">
+                  <span class="group-label">Texto</span>
+                  <input type="text" class="minimal-input text-input" [ngModel]="shape.text" (ngModelChange)="updateSelectedShape({ text: $event })" placeholder="Texto..." />
+                  <select [ngModel]="shape.fontFamily || 'Arial'" (ngModelChange)="updateSelectedShape({ fontFamily: $event })" class="minimal-select font-select">
+                    @for (font of fontOptions; track font.value) {
+                      <option [value]="font.value">{{ font.value }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="divider"></div>
+              } @else if (shape.source === 'trace') {
+                <div class="toolbar-group text-opt-group">
+                  @if (isConvertingText()) {
+                    <div class="text-convert-inline">
+                      <input type="text" class="minimal-input inline-text" [(ngModel)]="textConvertData.text" placeholder="¿Qué dice?" />
+                      <select [(ngModel)]="textConvertData.fontFamily" class="minimal-select font-select-inline">
+                        @for (font of fontOptions; track font.value) {
+                          <option [value]="font.value">{{ font.value }}</option>
+                        }
+                      </select>
+                      <button type="button" class="btn btn-primary btn-xs" (click)="applyTextConversion(shape)">Listo</button>
+                      <button type="button" class="btn btn-soft btn-xs" (click)="cancelTextConversion()">✖</button>
+                    </div>
+                  } @else {
+                    <button type="button" class="action-btn text-opt-btn" (click)="initTextConversion(shape)">
+                      ✍ Reemplazar por Texto
+                    </button>
+                  }
+                </div>
+                <div class="divider"></div>
+              }
+              <!-- Delete Trash Icon -->
+              <button type="button" class="delete-btn" (click)="removeSelectedShape()" title="Eliminar elemento">
+                🗑
+              </button>
+            </div>
+          }
+        }
+
+        <!-- Floating trace toolbar moved to sidebar -->
+      </main>
+    </div>
+  } @else {
+    <!-- Stunning Onboarding Landing Screen -->
+    <div class="welcome-screen">
+      <div class="animated-mesh-bg"></div>
+      
+      <!-- Live sewing trace animation -->
+      <div class="stitch-animation-container">
+        <svg viewBox="0 0 100 100" class="stitch-svg">
+          <circle cx="50" cy="50" r="45" class="stitch-circle" />
+        </svg>
+      </div>
+
+      <div class="welcome-card animate-fade-in">
+        <div class="welcome-badge">🧵 BORDADORAS STUDIO v1.1</div>
+        <h1 class="welcome-title">Diseñador de Bordados Digital</h1>
+        <p class="welcome-hero-text">
+          Convierte cualquier logotipo o imagen en patrones de costura física en segundos.
+        </p>
+        <p class="welcome-clarity">
+          En menos de 3 segundos entiendes el flujo: cargas un archivo, se digitaliza y lo exportas a tu máquina.
+        </p>
+
+        <!-- The 3-second quick visual guide -->
+        <div class="quick-guide-grid">
+          <div class="guide-item guide-item-1">
+            <span class="guide-num">1</span>
+            <div class="guide-desc">
+              <strong>Carga tu archivo</strong>
+              <span>Arrastra una imagen PNG/JPG o un archivo de bordado.</span>
+            </div>
+          </div>
+          <div class="guide-item guide-item-2">
+            <span class="guide-num">2</span>
+            <div class="guide-desc">
+              <strong>IA de Digitalización</strong>
+              <span>Genera puntadas de relleno Tatami o Satinado automáticamente.</span>
+            </div>
+          </div>
+          <div class="guide-item guide-item-3">
+            <span class="guide-num">3</span>
+            <div class="guide-desc">
+              <strong>Exporta para tu máquina</strong>
+              <span>Descarga en JEF (Janome), DST (universal), PES o PEC.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Central Upload Area -->
+        <div
+          class="welcome-dropzone"
+          [class.dragging]="isDraggingFile()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave()"
+          (drop)="onDrop($event)"
+        >
+          <div class="pulse-ring">
+            <i class="ph ph-cloud-arrow-up upload-icon"></i>
+          </div>
+          <h3>Arrastra tu imagen o archivo aquí</h3>
+          <p class="formats-hint">PNG, JPG, DST, PES, PEC, EMB, ART, JSON</p>
+          
+          <label class="btn btn-primary btn-lg upload-btn">
+            Seleccionar desde mi PC
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,.dst,.pes,.pec,.emb,.art,.json,.bord.json"
+              (change)="onImageSelected($event)"
+              hidden
+            />
+          </label>
+          <span class="upload-helper-text">Este es el único paso habilitado para comenzar.</span>
+        </div>
+
+        @if (designService.isTracing()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <span>{{ designService.statusMessage() || 'Digitalizando tu imagen...' }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
